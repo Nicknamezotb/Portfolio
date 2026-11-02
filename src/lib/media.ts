@@ -6,7 +6,7 @@ export type { Photo };
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-/** Préfixe un chemin interne avec la base du site (/portfolio). */
+/** Préfixe un chemin interne avec la base du site (/ avec le domaine perso). */
 export const url = (path: string) =>
   !path || /^(https?:|mailto:|#)/.test(path) ? path : `${base}${path.startsWith('/') ? path : '/' + path}`;
 

@@ -1,10 +1,10 @@
 # Portfolio — Quentin Girard
 
-Site statique (Astro) publié sur GitHub Pages : https://nicknamezotb.github.io/portfolio
+Site statique (Astro) publié sur GitHub Pages : https://quentingirard.fr
 
 ## Back-office
 
-**https://nicknamezotb.github.io/portfolio/admin**
+**https://quentingirard.fr/admin**
 
 Tout le site se gère depuis là : textes, réseaux, couleurs, vidéos, galeries, créations, projets et photos.
 
@@ -23,8 +23,8 @@ npm install
 npm run dev
 ```
 
-- Site : http://localhost:4321/portfolio
-- Back-office en mode test (sans GitHub, rien n'est publié) : http://localhost:4321/portfolio/admin?local
+- Site : http://localhost:4321
+- Back-office en mode test (sans GitHub, rien n'est publié) : http://localhost:4321/admin?local
 
 ## Structure
 

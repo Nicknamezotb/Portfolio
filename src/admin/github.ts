@@ -6,7 +6,7 @@ export const OWNER = 'Nicknamezotb';
 export const REPO = 'portfolio';
 export const BRANCH = 'main';
 export const CONTENT_PATH = 'src/data/content.json';
-export const SITE_URL = 'https://nicknamezotb.github.io/portfolio';
+export const SITE_URL = 'https://quentingirard.fr';
 
 const API = 'https://api.github.com';
 const TOKEN_KEY = 'qg-admin-token';

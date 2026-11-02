@@ -9,8 +9,8 @@ Quentin échange en français, avec un langage familier ; il n'est pas développ
 |---|---|
 | Code source | `C:\Users\qgir2\Desktop\Portfolio` (Windows 11) |
 | Repo GitHub | https://github.com/Nicknamezotb/portfolio (public, branche `main`) |
-| Site en ligne | https://nicknamezotb.github.io/portfolio/ (GitHub Pages) |
-| Back-office | https://nicknamezotb.github.io/portfolio/admin |
+| Site en ligne | https://quentingirard.fr/ (GitHub Pages) |
+| Back-office | https://quentingirard.fr/admin |
 | Contenu (textes, listes, réglages) | `src/data/content.json` (fichier unique) |
 | Photos publiées | `public/media/<id>.webp` + `<id>-sm.webp` (vignette), dans le repo |
 | Vidéos | YouTube (chaîne @qg.production), seulement les ID dans content.json |
@@ -18,11 +18,11 @@ Quentin échange en français, avec un langage familier ; il n'est pas développ
 | Formulaire de contact | Formspree (`settings.formspreeId` = xaeqgewr, compte de Quentin), repli mailto si vide. Adresse jamais en clair dans le HTML : boutons « Copier mon e-mail » (`data-copy-email`, encodage dans `src/lib/email.ts`) |
 | Polices | auto-hébergées via @fontsource (Bebas Neue titres, Inter texte, DM Sans petits textes via `--font-mono` — Quentin trouvait JetBrains Mono « trop IA ») |
 
-Pas de domaine perso pour l'instant. Pour en ajouter un : `site` et `base: '/'` dans `astro.config.mjs` + fichier `public/CNAME`.
+Domaine perso **quentingirard.fr** (OVH, payé 3 ans jusqu'en oct. 2029) : DNS OVH = 4 A vers 185.199.108-111.153 + CNAME www → nicknamezotb.github.io. ; `public/CNAME` ; `site`/`base: '/'` dans astro.config.mjs. L'ancienne adresse github.io redirige.
 
 ## Stack
 
-- **Astro 7** (site 100 % statique), `base: '/portfolio'` → **tous les liens internes passent par `url()`** de `src/lib/media.ts`.
+- **Astro 7** (site 100 % statique), `base: '/'` → **tous les liens internes passent par `url()`** de `src/lib/media.ts`.
 - **Preact** (`@astrojs/preact`) uniquement pour le back-office (`client:only`).
 - Node 26 / npm 11 en local. npm 11 bloque les scripts d'installation : après un `npm i`, si esbuild ou sharp posent problème → `npm install-scripts approve esbuild sharp`.
 - CI : `.github/workflows/deploy.yml` (withastro/action, **`node-version: 24` obligatoire**, Astro 7 refuse Node 20).
@@ -30,11 +30,11 @@ Pas de domaine perso pour l'instant. Pour en ajouter un : `site` et `base: '/'` 
 ## Commandes
 
 ```bash
-npm run dev      # http://localhost:4321/portfolio  (config preview : .claude/launch.json, nom "portfolio")
+npm run dev      # http://localhost:4321  (config preview : .claude/launch.json, nom "portfolio")
 npm run build    # vérifier avant de pousser
 ```
 
-- Admin en local **sans GitHub** : http://localhost:4321/portfolio/admin?local (mode `LOCAL` dans `src/admin/github.ts`, actif seulement en dev ; il charge le content.json local et ne peut pas publier).
+- Admin en local **sans GitHub** : http://localhost:4321/admin?local (mode `LOCAL` dans `src/admin/github.ts`, actif seulement en dev ; il charge le content.json local et ne peut pas publier).
 - Déployer : `git push` sur `main` → GitHub Actions publie en ~1 min.
 - Suivre le déploiement : `"/c/Program Files/GitHub CLI/gh.exe" run list -R Nicknamezotb/portfolio -L 3` puis `gh run watch <id> --exit-status`.
 - Commits : `git -c user.name="Quentin Girard" -c user.email="qg.girard@gmail.com" commit ...` (pas d'identité git globale configurée), avec la ligne Co-Authored-By.

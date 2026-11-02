@@ -1,11 +1,11 @@
 import { defineConfig } from 'astro/config';
 import preact from '@astrojs/preact';
 
-// URL finale : https://nicknamezotb.github.io/portfolio
+// URL finale : https://quentingirard.fr (domaine perso, fichier public/CNAME)
 // Avec un domaine perso (ex. quentingirard.fr) : site: 'https://quentingirard.fr' et base: '/'.
 export default defineConfig({
-  site: 'https://nicknamezotb.github.io',
-  base: '/portfolio',
+  site: 'https://quentingirard.fr',
+  base: '/',
   trailingSlash: 'ignore',
   integrations: [preact()],
   // Anciennes adresses Adobe Portfolio -> nouvelles pages
