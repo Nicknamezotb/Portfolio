@@ -3492,6 +3492,18 @@
       "related": "",
       "photos": [
         {
+          "src": "/media/mw3pxik88n0qt.webp",
+          "thumb": "/media/mw3pxik88n0qt-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": "",
+          "crop": {
+            "x": 49,
+            "y": 0,
+            "zoom": 1.18
+          }
+        },
+        {
           "src": "/media/mw3pwzezmd28l.webp",
           "thumb": "/media/mw3pwzezmd28l-sm.webp",
           "w": 1333,
@@ -3664,13 +3676,6 @@
           "thumb": "/media/mw3pxht67mnph-sm.webp",
           "w": 1333,
           "h": 2000,
-          "alt": ""
-        },
-        {
-          "src": "/media/mw3pxik88n0qt.webp",
-          "thumb": "/media/mw3pxik88n0qt-sm.webp",
-          "w": 2000,
-          "h": 1333,
           "alt": ""
         },
         {
@@ -4321,6 +4326,113 @@
           "src": "/media/mw3pzgoq74888.webp",
           "thumb": "/media/mw3pzgoq74888-sm.webp",
           "w": 1437,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3px1ghxajv9.webp",
+          "thumb": "/media/mw3px1ghxajv9-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3pxik88n0qt.webp",
+          "thumb": "/media/mw3pxik88n0qt-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3pxik88n0qt.webp",
+          "thumb": "/media/mw3pxik88n0qt-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        }
+      ]
+    },
+    {
+      "slug": "nouvelle-galeriet",
+      "title": "Les p'tits Rêveurs",
+      "context": "Photo professionnelles pour deux magiciens.",
+      "place": "",
+      "year": "2026",
+      "description": "",
+      "related": "",
+      "photos": [
+        {
+          "src": "/media/mw3q6q8wa8bx3.webp",
+          "thumb": "/media/mw3q6q8wa8bx3-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": "",
+          "crop": {
+            "x": 54,
+            "y": 32.8,
+            "zoom": 1
+          }
+        },
+        {
+          "src": "/media/mw3q6num3dnf1.webp",
+          "thumb": "/media/mw3q6num3dnf1-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6o7deh2ab.webp",
+          "thumb": "/media/mw3q6o7deh2ab-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6oj38zb41.webp",
+          "thumb": "/media/mw3q6oj38zb41-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6ou311w7c.webp",
+          "thumb": "/media/mw3q6ou311w7c-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6p4rl7fac.webp",
+          "thumb": "/media/mw3q6p4rl7fac-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6perrdf8e.webp",
+          "thumb": "/media/mw3q6perrdf8e-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6pojbjnt6.webp",
+          "thumb": "/media/mw3q6pojbjnt6-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6pxrlnu7b.webp",
+          "thumb": "/media/mw3q6pxrlnu7b-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q6qlbnuqnt.webp",
+          "thumb": "/media/mw3q6qlbnuqnt-sm.webp",
+          "w": 1333,
           "h": 2000,
           "alt": ""
         }
