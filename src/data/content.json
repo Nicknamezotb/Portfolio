@@ -4353,7 +4353,7 @@
       ]
     },
     {
-      "slug": "nouvelle-galeriet",
+      "slug": "lesptitsreveurs",
       "title": "Les p'tits Rêveurs",
       "context": "Photo professionnelles pour deux magiciens.",
       "place": "",
@@ -4432,6 +4432,358 @@
         {
           "src": "/media/mw3q6qlbnuqnt.webp",
           "thumb": "/media/mw3q6qlbnuqnt-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        }
+      ]
+    },
+    {
+      "slug": "galerie-98kn",
+      "title": "Nouvelle galerie",
+      "context": "",
+      "place": "",
+      "year": "2026",
+      "description": "",
+      "related": "",
+      "photos": [
+        {
+          "src": "/media/mw3qacwq57f51.webp",
+          "thumb": "/media/mw3qacwq57f51-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": "",
+          "crop": {
+            "x": 50,
+            "y": 37.2,
+            "zoom": 1
+          }
+        },
+        {
+          "src": "/media/mw3q9w9xydovb.webp",
+          "thumb": "/media/mw3q9w9xydovb-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q9wo23w5t0.webp",
+          "thumb": "/media/mw3q9wo23w5t0-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q9xzzdnyxr.webp",
+          "thumb": "/media/mw3q9xzzdnyxr-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3q9zhemtso2.webp",
+          "thumb": "/media/mw3q9zhemtso2-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa0c2lvm62.webp",
+          "thumb": "/media/mw3qa0c2lvm62-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa10qwc71l.webp",
+          "thumb": "/media/mw3qa10qwc71l-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa1h0aon27.webp",
+          "thumb": "/media/mw3qa1h0aon27-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa3c52x5p9.webp",
+          "thumb": "/media/mw3qa3c52x5p9-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa5jwx3zsf.webp",
+          "thumb": "/media/mw3qa5jwx3zsf-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa7bvk2n9a.webp",
+          "thumb": "/media/mw3qa7bvk2n9a-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa7qlgpz0s.webp",
+          "thumb": "/media/mw3qa7qlgpz0s-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa850cz65e.webp",
+          "thumb": "/media/mw3qa850cz65e-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa8o614sgv.webp",
+          "thumb": "/media/mw3qa8o614sgv-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa94v3fwyg.webp",
+          "thumb": "/media/mw3qa94v3fwyg-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qa9mjd29aw.webp",
+          "thumb": "/media/mw3qa9mjd29aw-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaa5yd6ae9.webp",
+          "thumb": "/media/mw3qaa5yd6ae9-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaantjv2tj.webp",
+          "thumb": "/media/mw3qaantjv2tj-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qab2layi8z.webp",
+          "thumb": "/media/mw3qab2layi8z-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qabhkuo4uh.webp",
+          "thumb": "/media/mw3qabhkuo4uh-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qadaw1v8sk.webp",
+          "thumb": "/media/mw3qadaw1v8sk-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qado6cczt9.webp",
+          "thumb": "/media/mw3qado6cczt9-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qae3ooyigx.webp",
+          "thumb": "/media/mw3qae3ooyigx-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaelce7hi0.webp",
+          "thumb": "/media/mw3qaelce7hi0-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaf3hy36l2.webp",
+          "thumb": "/media/mw3qaf3hy36l2-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qag2rdv21n.webp",
+          "thumb": "/media/mw3qag2rdv21n-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qahn9vjx2a.webp",
+          "thumb": "/media/mw3qahn9vjx2a-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qajheecftm.webp",
+          "thumb": "/media/mw3qajheecftm-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qal2wtfnit.webp",
+          "thumb": "/media/mw3qal2wtfnit-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaligjacbr.webp",
+          "thumb": "/media/mw3qaligjacbr-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qalyv8w7hq.webp",
+          "thumb": "/media/mw3qalyv8w7hq-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qan1bkz188.webp",
+          "thumb": "/media/mw3qan1bkz188-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaoo9rbr3h.webp",
+          "thumb": "/media/mw3qaoo9rbr3h-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaqez9y3ut.webp",
+          "thumb": "/media/mw3qaqez9y3ut-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qarjq4ldpp.webp",
+          "thumb": "/media/mw3qarjq4ldpp-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qasdg2smpy.webp",
+          "thumb": "/media/mw3qasdg2smpy-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qat3o07diw.webp",
+          "thumb": "/media/mw3qat3o07diw-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qau6ioq45z.webp",
+          "thumb": "/media/mw3qau6ioq45z-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qav9092dgn.webp",
+          "thumb": "/media/mw3qav9092dgn-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qawkm423g0.webp",
+          "thumb": "/media/mw3qawkm423g0-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qayi2zlktw.webp",
+          "thumb": "/media/mw3qayi2zlktw-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qaz7dqdf1k.webp",
+          "thumb": "/media/mw3qaz7dqdf1k-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qazmfmxbe9.webp",
+          "thumb": "/media/mw3qazmfmxbe9-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qb03iv1y7w.webp",
+          "thumb": "/media/mw3qb03iv1y7w-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qb0fxsfgmq.webp",
+          "thumb": "/media/mw3qb0fxsfgmq-sm.webp",
+          "w": 1333,
+          "h": 2000,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qb0vnknukp.webp",
+          "thumb": "/media/mw3qb0vnknukp-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qb1e59cfug.webp",
+          "thumb": "/media/mw3qb1e59cfug-sm.webp",
+          "w": 2000,
+          "h": 1333,
+          "alt": ""
+        },
+        {
+          "src": "/media/mw3qb1ypnx783.webp",
+          "thumb": "/media/mw3qb1ypnx783-sm.webp",
           "w": 1333,
           "h": 2000,
           "alt": ""
