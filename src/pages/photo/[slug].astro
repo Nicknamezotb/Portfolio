@@ -8,7 +8,7 @@ export function getStaticPaths() {
   const { galleries } = content;
   return galleries.map((g, i) => ({
     params: { slug: g.slug },
-    props: { g, next: galleries[(i + 1) % galleries.length] },
+    props: { g, next: galleries[(i - 1 + galleries.length) % galleries.length] },
   }));
 }
 const { g, next } = Astro.props;
