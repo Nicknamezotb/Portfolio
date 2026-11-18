@@ -7,6 +7,11 @@ import {
 import { StoreCtx, addFiles, imgUrl, pending, photoPaths, validate, onCompressing, whenIdle, type Store } from './store';
 import { PANELS } from './panels';
 import { Icon } from './icons';
+import { LOGO_PATH } from '../lib/logo';
+
+function Logo({ big }: { big?: boolean }) {
+  return <svg class={big ? 'logo big' : 'logo'} viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d={LOGO_PATH} /></svg>;
+}
 import { OAUTH_ENABLED, startLogin, finishLogin, freshToken, clearOAuth } from './auth';
 import './admin.css';
 import '../styles/photo-grid.css';
@@ -58,7 +63,7 @@ function Login({ onLogin, initialError = '' }: { onLogin: (token: string, user: 
     return (
       <div class="login">
         <div class="login-box">
-          <span class="logo big">QG</span>
+          <Logo big />
           <div>
             <h1>Back-office</h1>
             <p class="muted">Accès réservé au propriétaire du compte GitHub <b>{OWNER}</b>.</p>
@@ -82,7 +87,7 @@ function Login({ onLogin, initialError = '' }: { onLogin: (token: string, user: 
   return (
     <div class="login">
       <form class="login-box" onSubmit={submit}>
-        <span class="logo big">QG</span>
+        <Logo big />
         <div>
           <h1>Back-office</h1>
           <p class="muted">Accès réservé au propriétaire du compte GitHub <b>{OWNER}</b>.</p>
@@ -441,7 +446,7 @@ function Editor({ token, user, onLogout }: { token: string; user: User; onLogout
       <div class={`app${menu ? ' menu-open' : ''}`}>
         <aside class="side">
           <div class="side-head">
-            <span class="logo">QG</span>
+            <Logo />
             <span><b>Back-office</b><small>{content.settings.name}</small></span>
           </div>
           <nav>
