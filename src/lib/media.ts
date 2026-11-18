@@ -44,6 +44,10 @@ export function cover(list: Photo[] | undefined, seed: string): Photo | null {
   return { src: `https://picsum.photos/seed/${s}/1800/1200`, thumb: `https://picsum.photos/seed/${s}/1200/800`, w: 1200, h: 800 };
 }
 
+/** Photo de couverture choisie pour une galerie (sinon la 1re). */
+export const galleryCover = (g: { photos: Photo[]; cover?: string; slug: string }) =>
+  cover([g.photos.find((p) => p.src === g.cover) ?? g.photos[0]].filter(Boolean), g.slug);
+
 export const single = (p: Photo | null) => (p ? resolve(p) : null);
 
 // maxresdefault : 16/9 sans bandes noires (hqdefault est en 4/3 avec bandes)

@@ -2,7 +2,10 @@ import type { Content } from '../lib/types';
 import { useStore, slugify } from './store';
 import { cropCss } from './ui';
 import { GRID, ASPECT } from '../lib/layout';
-import { Panel, Card, Field, Area, Toggle, ColorField, SlugField, YouTubeField, ItemList, PhotoManager, SectionsEditor } from './ui';
+import { Panel, Card, Field, Area, Toggle, ColorField, SlugField, YouTubeField, ItemList, PhotoManager, SectionsEditor, Cropper } from './ui';
+import { Icon } from './icons';
+import { useState } from 'preact/hooks';
+import type { Gallery } from '../lib/types';
 
 const THEMES = {
   Clair: { bg: '#f5f3ee', text: '#17181c', accent: '#3f6a91' },
@@ -167,18 +170,19 @@ export function Home() {
             hint="Affichée floutée et estompée derrière les trois cartes, pour casser le fond uni. Sans photo, le fond reste uni. "
           />
         </div>
-        {(Object.keys(CARD_LABELS) as (keyof typeof CARD_LABELS)[]).map((k) => (
-          <div class="field">
+        <div class="field wide cards3">
+          {(Object.keys(CARD_LABELS) as (keyof typeof CARD_LABELS)[]).map((k) => (
             <PhotoManager
               label={CARD_LABELS[k][0]}
               single
+              compact
               aspect={ASPECT.card}
               photos={h.cards[k] ? [h.cards[k]!] : []}
               onChange={(p) => set((d) => (d.home.cards[k] = p[0] ?? null))}
-              hint={`${CARD_LABELS[k][1]} Format vertical conseillé. `}
+              hint={CARD_LABELS[k][1]}
             />
-          </div>
-        ))}
+          ))}
+        </div>
       </Card>
       <Card title="À la une">
         <label class="field wide">
@@ -262,6 +266,46 @@ export function Videos() {
 
 /* ---------- Galeries ---------- */
 
+/** Carte de la galerie (page « Photo ») : aperçu fidèle + choix de la couverture parmi les photos de la galerie. */
+function CoverChooser({ g, up }: { g: Gallery; up: (fn: (x: Gallery) => void) => void }) {
+  const { imgUrl } = useStore();
+  const [crop, setCrop] = useState(false);
+  const idx = Math.max(0, g.photos.findIndex((p) => p.src === g.cover));
+  const cur = g.photos[idx];
+  const meta = [g.place, g.year, `${g.photos.length} photos`].filter(Boolean).join(' · ');
+  return (
+    <div class="field wide cover-chooser">
+      <span class="label">Carte de la galerie</span>
+      <div class="cover-row">
+        <div class="cover-card" style={{ aspectRatio: String(ASPECT.card) }}>
+          {cur && <img src={imgUrl(cur)} alt="" style={cropCss(cur.crop)} />}
+          <div class="cover-cap"><small>{meta}</small><b>{g.title}</b></div>
+          {cur && <button type="button" class="tool cover-crop" title="Recadrer" onClick={() => setCrop(true)}><Icon name="crop" size={14} /></button>}
+        </div>
+        <div class="cover-pick">
+          <span class="hint">{g.photos.length ? 'Clique sur une photo de la galerie pour en faire la couverture :' : 'Ajoute des photos à la galerie (plus bas) pour choisir la couverture.'}</span>
+          <div class="cover-grid">
+            {g.photos.map((p, i) => (
+              <button type="button" key={p.src} class={`pick${i === idx ? ' on' : ''}`} onClick={() => up((x) => (x.cover = p.src))} title="Choisir comme couverture">
+                <img src={imgUrl(p)} alt="" loading="lazy" />
+                {i === idx && <span class="check"><Icon name="check" size={12} /></span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      {crop && cur && (
+        <Cropper
+          photo={cur}
+          aspect={ASPECT.card}
+          onClose={() => setCrop(false)}
+          onSave={(c) => { up((x) => { const p = x.photos[idx]; if (c) p.crop = c; else delete p.crop; }); setCrop(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
 export function Galleries() {
   const { content: c, set, imgUrl } = useStore();
   return (
@@ -272,7 +316,7 @@ export function Galleries() {
         onChange={(v) => set((d) => (d.galleries = v))}
         title={(g) => g.title || 'Galerie sans titre'}
         meta={(g) => `${g.photos.length} photo${g.photos.length > 1 ? 's' : ''}${g.year ? ' · ' + g.year : ''}`}
-        thumb={(g) => (g.photos[0] ? imgUrl(g.photos[0]) : undefined)}
+        thumb={(g) => { const c = g.photos.find((p) => p.src === g.cover) ?? g.photos[0]; return c ? imgUrl(c) : undefined; }}
         create={() => ({ slug: `galerie-${Date.now().toString(36).slice(-4)}`, title: 'Nouvelle galerie', context: '', place: '', year: String(new Date().getFullYear()), description: '', related: '', photos: [] })}
         addLabel="Ajouter une galerie"
         confirmDelete={(g) => `Supprimer la galerie « ${g.title} » et ses ${g.photos.length} photos ? (définitif après publication)`}
@@ -285,7 +329,8 @@ export function Galleries() {
             <Field label="Année" value={g.year} onChange={(v) => up((x) => (x.year = v))} />
             <Field label="Lien vers un projet (optionnel)" value={g.related} onChange={(v) => up((x) => (x.related = v))} placeholder="/projets/machu-picchu" />
             <Area label="Description" rows={3} value={g.description} onChange={(v) => up((x) => (x.description = v))} placeholder="Quelques lignes affichées en haut de la galerie" />
-            <PhotoManager photos={g.photos} columns={GRID.gallery} aspect={ASPECT.card} onChange={(p) => up((x) => (x.photos = p))} />
+            <CoverChooser g={g} up={up} />
+            <PhotoManager photos={g.photos} columns={GRID.gallery} aspect={ASPECT.card} coverSrc={g.cover} onCover={(src) => up((x) => (x.cover = src))} onChange={(p) => up((x) => (x.photos = p))} />
           </div>
         )}
       />

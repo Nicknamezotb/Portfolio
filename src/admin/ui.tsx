@@ -191,15 +191,23 @@ export function ItemList<T>({ items, onChange, title, meta, thumb, render, creat
  * aspect : format du cadre sur le site (photo unique, ou couverture = 1re photo d'une liste), utilisé par l'aperçu et le recadrage.
  * columns : pour une liste, réglage de la grille de la page (GRID dans lib/layout.ts) : l'aperçu reproduit exactement le site.
  */
-type PhotosProps = { label?: string; photos: Photo[]; onChange: (p: Photo[]) => void; single?: boolean; hint?: string; aspect?: number; columns?: number };
+type PhotosProps = {
+  label?: string; photos: Photo[]; onChange: (p: Photo[]) => void; single?: boolean; hint?: string; aspect?: number; columns?: number;
+  /** Photo unique : aperçu en pleine largeur, boutons dessous (pour les cartes côte à côte). */
+  compact?: boolean;
+  /** Liste dont on choisit la couverture (galeries) : src de la photo choisie, sinon la 1re. */
+  coverSrc?: string;
+  onCover?: (src: string) => void;
+};
 
 /** Glisser-déposer de photos, réordonnables par glisser, avec compression automatique. */
-export function PhotoManager({ label = 'Photos', photos, onChange, single, hint, aspect, columns = GRID.gallery }: PhotosProps) {
+export function PhotoManager({ label = 'Photos', photos, onChange, single, hint, aspect, columns = GRID.gallery, compact, coverSrc, onCover }: PhotosProps) {
   const { addFiles, imgUrl } = useStore();
   const [picking, setPicking] = useState(false);
   const [cropping, setCropping] = useState(false);
   // Recadrage : la photo unique (couverture/fond), ou la 1re d'une liste (couverture de la galerie)
-  const cropTarget = photos[0];
+  const coverIdx = Math.max(0, onCover ? photos.findIndex((p) => p.src === coverSrc) : 0);
+  const cropTarget = photos[coverIdx];
   const cropAspect = aspect ?? (single ? ASPECT.pageBg : ASPECT.card);
   const [waiting, setWaiting] = useState(0); // photos en cours de compression
   const [over, setOver] = useState(false);
@@ -248,70 +256,33 @@ export function PhotoManager({ label = 'Photos', photos, onChange, single, hint,
   const tools = (p: Photo, i: number) => (
     <>
       {isPending(p) && <span class="pend" title="Ajoutée sur cet appareil, pas encore publiée">Non publiée</span>}
-      {i === 0 && !single && <span class="badge">Couverture</span>}
+      {i === coverIdx && !single && <span class="badge">Couverture</span>}
       <span class="tile-tools">
-        {i === 0 && <button type="button" class="tool" title="Recadrer la couverture" onClick={() => setCropping(true)}><Icon name="crop" size={14} /></button>}
+        {onCover && i !== coverIdx && <button type="button" class="tool" title="Choisir comme couverture" onClick={() => onCover(p.src)}><Icon name="creations" size={14} /></button>}
+        {i === coverIdx && <button type="button" class="tool" title={single ? 'Recadrer' : 'Recadrer la couverture'} onClick={() => setCropping(true)}><Icon name="crop" size={14} /></button>}
         <button type="button" class="tool danger" title="Retirer" onClick={() => remove(i)}><Icon name="trash" size={14} /></button>
       </span>
     </>
   );
 
-  return (
-    <div class="field wide photos">
-      <div class="photos-head">
-        <span class="label">{label} {!single && <em>{photos.length}</em>}</span>
-        <button type="button" class="btn ghost small" onClick={() => setPicking(true)}><Icon name="library" size={14} />Photos du site</button>
-      </div>
-
-      {single ? (
-        (photos[0] || waiting > 0) && (
-          // aperçu au format réel du cadre sur le site (couverture, fond, carte…)
-          <div class="single-wrap">
-            <figure class={`single-photo${waiting ? ' loading' : ''}`} style={{ aspectRatio: String(cropAspect), width: `min(100%, calc(260px * ${cropAspect}))` }}>
-              {photos[0] && <img src={imgUrl(photos[0])} alt="" style={cropCss(photos[0].crop)} />}
-              {photos[0] && !waiting && tools(photos[0], 0)}
-            </figure>
-          </div>
-        )
-      ) : (
-        (photos.length > 0 || waiting > 0) && (
-          // même grille que le site (styles/photo-grid.css), mise à l'échelle de la largeur disponible
-          <div class="pgrid-scale" style={{ '--site-w': SITE_WIDTH, '--gap-n': GRID_GAP } as any}>
-            <div class="pgrid" style={{ '--rh-n': rowHeight(columns) } as any}>
-              {photos.map((p, i) => (
-                <figure
-                  key={p.src}
-                  draggable
-                  class={`ptile${drag === i ? ' dragging' : ''}`}
-                  style={{ '--r': ratio(p).toFixed(4) } as any}
-                  onDragStart={(e) => { setDrag(i); e.dataTransfer!.effectAllowed = 'move'; }}
-                  onDragEnter={() => reorder(i)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDragEnd={() => setDrag(null)}
-                >
-                  <img src={imgUrl(p)} alt="" loading="lazy" draggable={false} />
-                  {tools(p, i)}
-                </figure>
-              ))}
-              {Array.from({ length: waiting }, (_, i) => <figure key={`w${i}`} class="ptile loading" style={{ '--r': 1.5 } as any} />)}
-            </div>
-          </div>
-        )
-      )}
-
-      <div
-        class={`drop${over ? ' over' : ''}`}
-        onClick={() => input.current?.click()}
-        onDragOver={(e) => { if (drag === null) { e.preventDefault(); setOver(true); } }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => { e.preventDefault(); setOver(false); if (drag === null) add(e.dataTransfer?.files ?? null); }}
-      >
-        <Icon name="upload" size={18} />
-        {waiting > 0
-          ? <span>Préparation de {waiting} photo{waiting > 1 ? 's' : ''}… tu peux en ajouter d'autres</span>
-          : <span>{single ? (photos.length ? 'Remplacer la photo' : 'Ajouter une photo') : 'Glisse tes photos ici'} <u>ou parcourir</u></span>}
-        <input ref={input} type="file" accept="image/*" multiple={!single} hidden onChange={(e) => { add(e.currentTarget.files); e.currentTarget.value = ''; }} />
-      </div>
+  const drop = (
+    <div
+      class={`drop${over ? ' over' : ''}`}
+      onClick={() => input.current?.click()}
+      onDragOver={(e) => { if (drag === null) { e.preventDefault(); setOver(true); } }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { e.preventDefault(); setOver(false); if (drag === null) add(e.dataTransfer?.files ?? null); }}
+    >
+      <Icon name="upload" size={18} />
+      {waiting > 0
+        ? <span>Préparation de {waiting} photo{waiting > 1 ? 's' : ''}…{!single && ' tu peux en ajouter d’autres'}</span>
+        : <span>{single ? (photos.length ? 'Remplacer' : 'Ajouter une photo') : 'Glisse tes photos ici'} <u>ou parcourir</u></span>}
+      <input ref={input} type="file" accept="image/*" multiple={!single} hidden onChange={(e) => { add(e.currentTarget.files); e.currentTarget.value = ''; }} />
+    </div>
+  );
+  const library = <button type="button" class="btn ghost small lib-btn" onClick={() => setPicking(true)}><Icon name="library" size={14} />Photos du site</button>;
+  const modals = (
+    <>
       {cropping && cropTarget && (
         <Cropper
           photo={cropTarget}
@@ -319,8 +290,8 @@ export function PhotoManager({ label = 'Photos', photos, onChange, single, hint,
           onClose={() => setCropping(false)}
           onSave={(crop) => {
             const next = photos.slice();
-            next[0] = { ...cropTarget, crop };
-            if (!crop) delete next[0].crop;
+            next[coverIdx] = { ...cropTarget, crop };
+            if (!crop) delete next[coverIdx].crop;
             onChange(next);
             setCropping(false);
           }}
@@ -334,9 +305,70 @@ export function PhotoManager({ label = 'Photos', photos, onChange, single, hint,
           onPick={(picked) => { onChange(single ? picked.slice(0, 1) : [...photos, ...picked]); setPicking(false); }}
         />
       )}
+    </>
+  );
+
+  // Photo unique : aperçu au format réel du cadre sur le site, boutons à côté (ou dessous en mode compact)
+  if (single) {
+    const p = photos[0];
+    return (
+      <div class={`field photos single-mgr${compact ? ' compact' : ' wide'}`}>
+        <span class="label">{label}</span>
+        <div class="single-row">
+          <figure
+            class={`single-photo${waiting ? ' loading' : ''}${!p && !waiting ? ' empty' : ''}`}
+            style={{ '--ar': String(cropAspect) } as any}
+            onClick={!p && !waiting ? () => input.current?.click() : undefined}
+          >
+            {p && !waiting && <img src={imgUrl(p)} alt="" style={cropCss(p.crop)} />}
+            {p && !waiting && tools(p, 0)}
+            {!p && !waiting && <Icon name="galleries" size={24} />}
+          </figure>
+          <div class="single-side">
+            {drop}
+            {library}
+            {hint && <span class="hint">{hint}</span>}
+          </div>
+        </div>
+        {modals}
+      </div>
+    );
+  }
+
+  return (
+    <div class="field wide photos">
+      <div class="photos-head">
+        <span class="label">{label} <em>{photos.length}</em></span>
+        {library}
+      </div>
+      {(photos.length > 0 || waiting > 0) && (
+        // même grille que le site (styles/photo-grid.css), mise à l'échelle de la largeur disponible
+        <div class="pgrid-scale" style={{ '--site-w': SITE_WIDTH, '--gap-n': GRID_GAP } as any}>
+          <div class="pgrid" style={{ '--rh-n': rowHeight(columns) } as any}>
+            {photos.map((p, i) => (
+              <figure
+                key={p.src}
+                draggable
+                class={`ptile${drag === i ? ' dragging' : ''}`}
+                style={{ '--r': ratio(p).toFixed(4) } as any}
+                onDragStart={(e) => { setDrag(i); e.dataTransfer!.effectAllowed = 'move'; }}
+                onDragEnter={() => reorder(i)}
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnd={() => setDrag(null)}
+              >
+                <img src={imgUrl(p)} alt="" loading="lazy" draggable={false} />
+                {tools(p, i)}
+              </figure>
+            ))}
+            {Array.from({ length: waiting }, (_, i) => <figure key={`w${i}`} class="ptile loading" style={{ '--r': 1.5 } as any} />)}
+          </div>
+        </div>
+      )}
+      {drop}
+      {modals}
       <span class="hint">
-        {hint ?? (single ? '' : 'Aperçu identique à la page du site. Glisse les vignettes pour changer l’ordre ; la première sert de couverture. ')}
-        Les photos sont compressées automatiquement (WebP, 2000 px max, sans données GPS).
+        {hint ?? `Aperçu identique à la page du site. Glisse les vignettes pour changer l’ordre${onCover ? ' ; l’étoile choisit la couverture' : ' ; la première sert de couverture'}. `}
+        Photos compressées automatiquement (WebP, 2000 px max, sans données GPS).
       </span>
     </div>
   );
@@ -439,7 +471,7 @@ export const cropCss = (c?: CropValue) =>
   c ? { objectPosition: `${c.x}% ${c.y}%`, transformOrigin: `${c.x}% ${c.y}%`, scale: String(c.zoom) } : undefined;
 
 /** Recadrage non destructif : on choisit la zone visible (glisser) et le zoom ; l'original n'est pas modifié. */
-function Cropper({ photo, aspect, onSave, onClose }: { photo: Photo; aspect: number; onSave: (c: CropValue | undefined) => void; onClose: () => void }) {
+export function Cropper({ photo, aspect, onSave, onClose }: { photo: Photo; aspect: number; onSave: (c: CropValue | undefined) => void; onClose: () => void }) {
   const { imgUrl } = useStore();
   const [c, setC] = useState<CropValue>(photo.crop ?? { x: 50, y: 50, zoom: 1 });
   const frame = useRef<HTMLDivElement>(null);

@@ -27,6 +27,7 @@ export type Gallery = {
   description: string;  // texte affiché en haut de la galerie
   related: string;
   photos: Photo[];
+  cover?: string;       // src de la photo de couverture choisie (sinon la 1re)
 };
 
 export type Section = { title: string; caption: string; photos: Photo[] };

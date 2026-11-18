@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { content, url, cover, single, ytThumb, cropStyle, rich } from '../lib/media';
+import { content, url, cover, galleryCover, single, ytThumb, cropStyle, rich } from '../lib/media';
 import { ASPECT } from '../lib/layout';
 
 const { settings, home, galleries, videos, creations, projects } = content;
@@ -21,7 +21,7 @@ const cards = home.cards ?? { photo: null, video: null, creations: null };
 const entries = [
   {
     href: '/photo', title: 'Photo', meta: `${galleries.length} galeries`,
-    pic: single(cards.photo) ?? cover(galleries[0]?.photos, galleries[0]?.slug ?? 'photo'),
+    pic: single(cards.photo) ?? (galleries[0] ? galleryCover(galleries[0]) : cover([], 'photo')),
   },
   {
     href: '/video', title: 'Vidéo', meta: `${videoCount} projets`,
