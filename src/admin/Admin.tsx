@@ -7,6 +7,7 @@ import {
 import { StoreCtx, addFiles, imgUrl, pending, photoPaths, validate, onCompressing, whenIdle, type Store } from './store';
 import { PANELS } from './panels';
 import { Icon } from './icons';
+import { OAUTH_ENABLED, startLogin, finishLogin, freshToken, clearOAuth } from './auth';
 import './admin.css';
 import '../styles/photo-grid.css';
 
@@ -14,11 +15,16 @@ type User = { login: string; avatar: string };
 
 /* ---------- Connexion ---------- */
 
-function Login({ onLogin }: { onLogin: (token: string, user: User) => void }) {
+function Login({ onLogin, initialError = '' }: { onLogin: (token: string, user: User) => void; initialError?: string }) {
   const [token, setToken] = useState('');
   const [remember, setRemember] = useState(true);
-  const [err, setErr] = useState('');
+  const [err, setErr] = useState(initialError);
   const [busy, setBusy] = useState(false);
+
+  const github = async () => {
+    setBusy(true); setErr('');
+    try { await startLogin(); } catch (e: any) { setErr(e.message); setBusy(false); }
+  };
 
   const submit = async (e: Event) => {
     e.preventDefault();
@@ -35,6 +41,44 @@ function Login({ onLogin }: { onLogin: (token: string, user: User) => void }) {
     }
   };
 
+  const tokenFields = (
+    <>
+      <label class="field">
+        <span class="label">Jeton GitHub</span>
+        <input type="password" value={token} onInput={(e) => setToken(e.currentTarget.value)} placeholder="github_pat_…" autoComplete="current-password" required />
+      </label>
+      <label class="check">
+        <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.currentTarget.checked)} />
+        Rester connecté sur cet appareil
+      </label>
+    </>
+  );
+
+  if (OAUTH_ENABLED) {
+    return (
+      <div class="login">
+        <div class="login-box">
+          <span class="logo big">QG</span>
+          <div>
+            <h1>Back-office</h1>
+            <p class="muted">Accès réservé au propriétaire du compte GitHub <b>{OWNER}</b>.</p>
+          </div>
+          {err && <p class="error">{err}</p>}
+          <button type="button" class="btn primary block" disabled={busy} onClick={github}>
+            {busy ? 'Connexion…' : 'Se connecter avec GitHub'}
+          </button>
+          <details class="help">
+            <summary>Secours : se connecter avec un jeton</summary>
+            <form onSubmit={submit} style="display:grid;gap:12px;margin-top:12px">
+              {tokenFields}
+              <button class="btn block" disabled={busy}>{busy ? 'Vérification…' : 'Se connecter avec le jeton'}</button>
+            </form>
+          </details>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div class="login">
       <form class="login-box" onSubmit={submit}>
@@ -43,14 +87,7 @@ function Login({ onLogin }: { onLogin: (token: string, user: User) => void }) {
           <h1>Back-office</h1>
           <p class="muted">Accès réservé au propriétaire du compte GitHub <b>{OWNER}</b>.</p>
         </div>
-        <label class="field">
-          <span class="label">Jeton GitHub</span>
-          <input type="password" value={token} onInput={(e) => setToken(e.currentTarget.value)} placeholder="github_pat_…" autoComplete="current-password" required />
-        </label>
-        <label class="check">
-          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.currentTarget.checked)} />
-          Rester connecté sur cet appareil
-        </label>
+        {tokenFields}
         {err && <p class="error">{err}</p>}
         <button class="btn primary block" disabled={busy}>{busy ? 'Vérification…' : 'Se connecter'}</button>
 
@@ -238,6 +275,8 @@ function PublishDock({ job, dirty, queued, onClose, onRetry }: { job: Job; dirty
 /* ---------- Application ---------- */
 
 function Editor({ token, user, onLogout }: { token: string; user: User; onLogout: () => void }) {
+  const tok = useRef(token); // jeton toujours à jour (renouvelé toutes les 8 h avec la connexion GitHub)
+  tok.current = token;
   const [content, setContent] = useState<Content | null>(null);
   const [originalJson, setOriginalJson] = useState('');
   const [sendingJson, setSendingJson] = useState(''); // version en cours d'envoi
@@ -274,7 +313,7 @@ function Editor({ token, user, onLogout }: { token: string; user: User; onLogout
 
   const reload = () => {
     setError('');
-    loadContent(token)
+    loadContent(tok.current)
       .then(({ data, sha }) => {
         // Valeurs par défaut pour les champs ajoutés après coup
         data.home = { heroCaption: '', heroSide: 'left', heroOpacity: 55, worksBg: null, ...data.home };
@@ -288,7 +327,7 @@ function Editor({ token, user, onLogout }: { token: string; user: User; onLogout
       })
       .catch((e) => setError(`Impossible de charger le contenu : ${e.message}`));
   };
-  useEffect(reload, [token]);
+  useEffect(reload, []); // pas de rechargement quand le jeton est renouvelé : on garderait sinon les modifs en cours
   useEffect(() => { location.hash = tab; }, [tab]);
   useEffect(() => onCompressing(setCompressing), []);
   useEffect(() => () => clearInterval(poll.current), []);
@@ -318,7 +357,7 @@ function Editor({ token, user, onLogout }: { token: string; user: User; onLogout
     clearInterval(poll.current);
     const started = Date.now();
     poll.current = window.setInterval(async () => {
-      const s = await deployStatus(token, commit);
+      const s = await deployStatus(tok.current, commit);
       setJob((j) => (j && j.phase === 'deploy' ? { ...j, deploy: s, phase: s === 'success' ? 'live' : 'deploy' } : j));
       if (s === 'success' || s === 'failure' || s === 'unknown' || Date.now() - started > 6 * 60_000) clearInterval(poll.current);
     }, 4000);
@@ -351,7 +390,7 @@ function Editor({ token, user, onLogout }: { token: string; user: User; onLogout
     setSendingJson(JSON.stringify(snap));
     setJob({ phase: 'check', started: t0, photos: added, removed });
     try {
-      const res = await publish(token, {
+      const res = await publish(tok.current, {
         json: JSON.stringify(snap, null, 2) + '\n',
         loadedSha: shaRef.current,
         uploads,
@@ -457,18 +496,45 @@ function Editor({ token, user, onLogout }: { token: string; user: User; onLogout
 export default function Admin() {
   const [session, setSession] = useState<{ token: string; user: User } | null>(null);
   const [checking, setChecking] = useState(true);
+  const [loginErr, setLoginErr] = useState('');
 
   useEffect(() => {
     if (LOCAL) { setSession({ token: 'local', user: { login: 'test-local', avatar: '' } }); setChecking(false); return; }
-    const t = tokenStore.get();
-    if (!t) { setChecking(false); return; }
-    verify(t)
-      .then((user) => setSession({ token: t, user }))
-      .catch(() => tokenStore.clear())
-      .finally(() => setChecking(false));
+    (async () => {
+      // 1. Retour de GitHub après « Se connecter avec GitHub »
+      try {
+        const t = await finishLogin();
+        if (t) { setSession({ token: t, user: await verify(t) }); return; }
+      } catch (e: any) {
+        clearOAuth();
+        setLoginErr(e.message);
+        return;
+      }
+      // 2. Connexion GitHub déjà enregistrée (renouvelée si besoin), sinon ancien jeton collé à la main
+      const oauth = OAUTH_ENABLED ? await freshToken() : null;
+      const t = oauth ?? tokenStore.get();
+      if (!t) return;
+      try {
+        setSession({ token: t, user: await verify(t) });
+      } catch {
+        if (oauth) clearOAuth(); else tokenStore.clear();
+      }
+    })().finally(() => setChecking(false));
   }, []);
 
+  // Connexion GitHub : le jeton dure 8 h, on le renouvelle en arrière-plan (et au retour sur l'onglet après une veille).
+  useEffect(() => {
+    if (!session || LOCAL || !OAUTH_ENABLED) return;
+    const tick = () => freshToken().then((t) => {
+      if (t && t !== session.token) setSession((s) => s && { ...s, token: t });
+    });
+    const id = setInterval(tick, 60_000);
+    const onVisible = () => document.visibilityState === 'visible' && tick();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [session?.token]);
+
   if (checking) return <div class="center muted"><span class="spin dark" />Chargement…</div>;
-  if (!session) return <Login onLogin={(token, user) => setSession({ token, user })} />;
-  return <Editor token={session.token} user={session.user} onLogout={() => { tokenStore.clear(); setSession(null); }} />;
+  if (!session) return <Login initialError={loginErr} onLogin={(token, user) => setSession({ token, user })} />;
+  return <Editor token={session.token} user={session.user} onLogout={() => { tokenStore.clear(); clearOAuth(); setSession(null); }} />;
 }
