@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { content, url, cover, single, ytThumb, cropStyle, rich } from '../lib/media';
+import { ASPECT } from '../lib/layout';
 
 const { settings, home, galleries, videos, creations, projects } = content;
 const hero = single(home.heroPhoto) ?? cover([], 'hero');
@@ -59,7 +60,7 @@ const entries = [
     </header>
 
     <!-- Trois cartes alignées -->
-    <div class="works-grid">
+    <div class="works-grid" style={`--card-ar:${ASPECT.card}`}>
       {entries.map((e, i) => (
         <a href={url(e.href)} class={`work work-${i + 1}`} data-fade>
           <div class="work-media">
@@ -276,7 +277,7 @@ const entries = [
 
   .works-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 28px); }
   .work { position: relative; display: block; opacity: 0; will-change: transform, opacity; }
-  .work-media { aspect-ratio: 4 / 5; }
+  .work-media { aspect-ratio: var(--card-ar, 4 / 5); }
 
   .work-media {
     position: relative; overflow: hidden; border-radius: 6px; background: var(--raised);

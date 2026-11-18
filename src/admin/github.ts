@@ -80,60 +80,109 @@ const blobToB64 = (b: Blob) =>
     r.readAsDataURL(b);
   });
 
+export type PublishProgress =
+  | { step: 'check' }
+  | { step: 'upload'; done: number; total: number; bytesDone: number; bytesTotal: number }
+  | { step: 'commit' };
+
 export type PublishInput = {
   json: string;
   loadedSha: string;
   uploads: Map<string, Blob>; // chemin dans le repo -> fichier
   deletes: string[];          // chemins dans le repo
   message: string;
-  onProgress?: (done: number, total: number) => void;
+  onProgress?: (p: PublishProgress) => void;
 };
+
+/** Fichiers déjà envoyés à GitHub (chemin -> identifiant) : un nouvel essai après un échec ne les renvoie pas. */
+const sent = new Map<string, string>();
+const sentBlob = new WeakMap<Blob, string>();
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Réessaie une requête quand GitHub ou le réseau flanche (erreurs 5xx, coupure, limite temporaire). */
+async function retry<T>(fn: () => Promise<T>, tries = 4): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      const transient = !(e instanceof GitHubError) || e.status >= 500 || e.status === 429 || e.status === 403 && /rate|abuse|secondary/i.test(e.message);
+      if (!transient || i >= tries) throw e;
+      await wait(1000 * 2 ** i);
+    }
+  }
+}
+
+/** Exécute les tâches avec au plus `n` en parallèle. */
+async function pool<T>(items: T[], n: number, fn: (x: T) => Promise<void>) {
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) await fn(items[next++]);
+  }));
+}
 
 /** Publie tout en un seul commit (contenu + nouvelles photos + suppressions). */
 export async function publish(token: string, { json, loadedSha, uploads, deletes, message, onProgress }: PublishInput) {
-  const ref = await gh(token, `${repo}/git/ref/heads/${BRANCH}`);
-  const head = ref.object.sha as string;
-
+  if (LOCAL) return simulatePublish(uploads, onProgress);
+  onProgress?.({ step: 'check' });
   // Protection : si content.json a été modifié ailleurs entre-temps, on ne l'écrase pas.
-  const current = await gh(token, `${repo}/contents/${CONTENT_PATH}?ref=${head}`);
+  const ref0 = await retry(() => gh(token, `${repo}/git/ref/heads/${BRANCH}`));
+  const current = await retry(() => gh(token, `${repo}/contents/${CONTENT_PATH}?ref=${ref0.object.sha}`));
   if (current.sha !== loadedSha) {
-    throw new GitHubError('Le contenu a été modifié ailleurs (autre onglet ?). Recharge la page avant de publier.');
+    throw new GitHubError('Le contenu a été modifié ailleurs (autre onglet ou autre appareil ?). Recharge la page avant de publier.', 409);
   }
 
-  const commit = await gh(token, `${repo}/git/commits/${head}`);
+  // 1. Envoi des photos, 4 à la fois
+  const list = [...uploads];
+  const total = list.length;
+  const bytesTotal = list.reduce((n, [, b]) => n + b.size, 0);
+  let done = 0, bytesDone = 0;
+  const report = () => onProgress?.({ step: 'upload', done, total, bytesDone, bytesTotal });
+  report();
   const tree: any[] = [{ path: CONTENT_PATH, mode: '100644', type: 'blob', content: json }];
-
-  const total = uploads.size;
-  let done = 0;
-  onProgress?.(0, total);
-  for (const [path, blob] of uploads) {
-    const b = await gh(token, `${repo}/git/blobs`, {
-      method: 'POST',
-      body: JSON.stringify({ content: await blobToB64(blob), encoding: 'base64' }),
-    });
-    tree.push({ path, mode: '100644', type: 'blob', sha: b.sha });
-    onProgress?.(++done, total);
-  }
+  await pool(list, 4, async ([path, blob]) => {
+    let sha = sentBlob.get(blob) ?? sent.get(path);
+    if (!sha) {
+      const content = await blobToB64(blob);
+      const b = await retry(() => gh(token, `${repo}/git/blobs`, { method: 'POST', body: JSON.stringify({ content, encoding: 'base64' }) }));
+      sha = b.sha as string;
+      sent.set(path, sha);
+      sentBlob.set(blob, sha);
+    }
+    tree.push({ path, mode: '100644', type: 'blob', sha });
+    done++; bytesDone += blob.size;
+    report();
+  });
   for (const path of deletes) tree.push({ path, mode: '100644', type: 'blob', sha: null });
 
-  const newTree = await gh(token, `${repo}/git/trees`, {
-    method: 'POST',
-    body: JSON.stringify({ base_tree: commit.tree.sha, tree }),
-  });
-  const newCommit = await gh(token, `${repo}/git/commits`, {
-    method: 'POST',
-    body: JSON.stringify({ message, tree: newTree.sha, parents: [head] }),
-  });
-  await gh(token, `${repo}/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: JSON.stringify({ sha: newCommit.sha }) });
-
-  const after = await gh(token, `${repo}/contents/${CONTENT_PATH}?ref=${newCommit.sha}`);
-  return { commit: newCommit.sha as string, contentSha: after.sha as string };
+  // 2. Enregistrement : un seul commit. Si la branche a bougé entre-temps (autre publication), on recommence sur la nouvelle base.
+  onProgress?.({ step: 'commit' });
+  for (let attempt = 1; ; attempt++) {
+    const ref = await retry(() => gh(token, `${repo}/git/ref/heads/${BRANCH}`));
+    const head = ref.object.sha as string;
+    if (head !== ref0.object.sha) {
+      const cur = await retry(() => gh(token, `${repo}/contents/${CONTENT_PATH}?ref=${head}`));
+      if (cur.sha !== loadedSha) throw new GitHubError('Le contenu a été modifié ailleurs pendant l’envoi. Recharge la page puis republie.', 409);
+    }
+    const commit = await retry(() => gh(token, `${repo}/git/commits/${head}`));
+    const newTree = await retry(() => gh(token, `${repo}/git/trees`, { method: 'POST', body: JSON.stringify({ base_tree: commit.tree.sha, tree }) }));
+    const newCommit = await retry(() => gh(token, `${repo}/git/commits`, { method: 'POST', body: JSON.stringify({ message, tree: newTree.sha, parents: [head] }) }));
+    try {
+      await gh(token, `${repo}/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: JSON.stringify({ sha: newCommit.sha }) });
+    } catch (e: any) {
+      if (attempt < 3 && (e.status === 422 || e.status >= 500 || !(e instanceof GitHubError))) { await wait(1500); continue; }
+      throw e;
+    }
+    const after = await retry(() => gh(token, `${repo}/contents/${CONTENT_PATH}?ref=${newCommit.sha}`));
+    return { commit: newCommit.sha as string, contentSha: after.sha as string };
+  }
 }
 
 export type DeployState = 'pending' | 'running' | 'success' | 'failure' | 'unknown';
 
 /** État du déploiement GitHub Pages déclenché par un commit. */
 export async function deployStatus(token: string, sha: string): Promise<DeployState> {
+  if (LOCAL) { const t = Date.now() - Number(sha.split('-')[1]); return t < 4000 ? 'pending' : t < 12000 ? 'running' : 'success'; }
   try {
     const r = await gh(token, `${repo}/actions/runs?head_sha=${sha}&per_page=1`);
     const run = r.workflow_runs?.[0];
@@ -156,6 +205,24 @@ export const TOKEN_URL =
     contents: 'write',
     actions: 'read',
   });
+
+/** Mode test local : simule un envoi (rien n'est envoyé) pour tester l'interface. */
+async function simulatePublish(uploads: Map<string, Blob>, onProgress?: (p: PublishProgress) => void) {
+  onProgress?.({ step: 'check' });
+  await wait(600);
+  const list = [...uploads.values()];
+  const bytesTotal = list.reduce((n, b) => n + b.size, 0);
+  let bytesDone = 0;
+  for (let i = 0; i < list.length; i++) {
+    onProgress?.({ step: 'upload', done: i, total: list.length, bytesDone, bytesTotal });
+    await wait(400);
+    bytesDone += list[i].size;
+  }
+  onProgress?.({ step: 'upload', done: list.length, total: list.length, bytesDone, bytesTotal });
+  onProgress?.({ step: 'commit' });
+  await wait(800);
+  return { commit: `local-${Date.now()}`, contentSha: 'local' };
+}
 
 /** Mode test local (uniquement avec `npm run dev` et ?local dans l'URL) : aucun accès GitHub. */
 export const LOCAL = import.meta.env.DEV && typeof location !== 'undefined' && location.search.includes('local');

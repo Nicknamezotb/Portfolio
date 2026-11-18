@@ -1,6 +1,7 @@
 import type { Content } from '../lib/types';
 import { useStore, slugify } from './store';
 import { cropCss } from './ui';
+import { GRID, ASPECT } from '../lib/layout';
 import { Panel, Card, Field, Area, Toggle, ColorField, SlugField, YouTubeField, ItemList, PhotoManager, SectionsEditor } from './ui';
 
 const THEMES = {
@@ -131,7 +132,7 @@ export function Home() {
         <PhotoManager
           label="Photo plein écran"
           single
-          aspect={16 / 9}
+          aspect={ASPECT.hero}
           photos={h.heroPhoto ? [h.heroPhoto] : []}
           onChange={(p) => set((d) => (d.home.heroPhoto = p[0] ?? null))}
           hint="Occupe tout l'écran. Choisis une photo horizontale dont le sujet est du côté opposé au texte. "
@@ -160,7 +161,7 @@ export function Home() {
           <PhotoManager
             label="Photo de fond de la section « Travaux »"
             single
-            aspect={2.4}
+            aspect={ASPECT.worksBg}
             photos={h.worksBg ? [h.worksBg] : []}
             onChange={(p) => set((d) => (d.home.worksBg = p[0] ?? null))}
             hint="Affichée floutée et estompée derrière les trois cartes, pour casser le fond uni. Sans photo, le fond reste uni. "
@@ -171,7 +172,7 @@ export function Home() {
             <PhotoManager
               label={CARD_LABELS[k][0]}
               single
-              aspect={4 / 5}
+              aspect={ASPECT.card}
               photos={h.cards[k] ? [h.cards[k]!] : []}
               onChange={(p) => set((d) => (d.home.cards[k] = p[0] ?? null))}
               hint={`${CARD_LABELS[k][1]} Format vertical conseillé. `}
@@ -202,7 +203,7 @@ function PageBg({ k, label }: { k: 'photo' | 'video' | 'creations' | 'contact'; 
       <PhotoManager
         label="Photo floutée en haut de la page"
         single
-        aspect={16 / 9}
+        aspect={ASPECT.pageBg}
         photos={p ? [p] : []}
         onChange={(ph) => set((d) => { d.pageBgs = { photo: null, video: null, creations: null, contact: null, ...d.pageBgs, [k]: ph[0] ?? null }; })}
         hint="Affichée très floutée et estompée derrière le titre de la page, pour casser le fond uni. Sans photo, le fond reste uni. "
@@ -284,7 +285,7 @@ export function Galleries() {
             <Field label="Année" value={g.year} onChange={(v) => up((x) => (x.year = v))} />
             <Field label="Lien vers un projet (optionnel)" value={g.related} onChange={(v) => up((x) => (x.related = v))} placeholder="/projets/machu-picchu" />
             <Area label="Description" rows={3} value={g.description} onChange={(v) => up((x) => (x.description = v))} placeholder="Quelques lignes affichées en haut de la galerie" />
-            <PhotoManager photos={g.photos} onChange={(p) => up((x) => (x.photos = p))} />
+            <PhotoManager photos={g.photos} columns={GRID.gallery} aspect={ASPECT.card} onChange={(p) => up((x) => (x.photos = p))} />
           </div>
         )}
       />
@@ -319,7 +320,7 @@ export function Creations() {
             <Field label="Année" value={x.year} onChange={(v) => up((y) => (y.year = v))} />
             <Field label="Réalisations" value={x.work} onChange={(v) => up((y) => (y.work = v))} placeholder="Logo, charte graphique, …" wide />
             <Area label="Description" value={x.text} onChange={(v) => up((y) => (y.text = v))} />
-            <SectionsEditor sections={x.sections} onChange={(s) => up((y) => (y.sections = s))} />
+            <SectionsEditor sections={x.sections} columns={GRID.creation} coverAspect={ASPECT.card} onChange={(s) => up((y) => (y.sections = s))} />
             <div class="field wide sub-card">
               <span class="label">Vidéo (optionnelle)</span>
               <div class="grid">
@@ -365,12 +366,12 @@ export function Projects() {
             <PhotoManager
               label="Image de couverture (pour l'accueil)"
               single
-              aspect={2.3}
+              aspect={ASPECT.projectCover}
               photos={p.cover ? [p.cover] : []}
               onChange={(ph) => up((y) => (y.cover = ph[0] ?? null))}
               hint="Optionnelle : sinon la miniature de la vidéo est utilisée. "
             />
-            <SectionsEditor sections={p.sections} onChange={(s) => up((y) => (y.sections = s))} />
+            <SectionsEditor sections={p.sections} columns={GRID.project} coverAspect={ASPECT.projectCover} onChange={(s) => up((y) => (y.sections = s))} />
             <Field label="Bouton de fin : texte" value={p.moreLabel} onChange={(v) => up((y) => (y.moreLabel = v))} placeholder="Plus de photos" />
             <Field label="Bouton de fin : lien" value={p.moreLink} onChange={(v) => up((y) => (y.moreLink = v))} placeholder="/photo/perou" />
           </div>

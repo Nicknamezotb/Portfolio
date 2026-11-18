@@ -1,7 +1,9 @@
 import type { ComponentChildren } from 'preact';
 import { useState, useRef } from 'preact/hooks';
 import type { Photo } from '../lib/types';
-import { useStore, youtubeId, photoLibrary } from './store';
+import { useStore, youtubeId, photoLibrary, isPending } from './store';
+import { GRID, GRID_GAP, ASPECT, SITE_WIDTH, rowHeight, ratio } from '../lib/layout';
+import { Icon } from './icons';
 
 /* ---------- Champs ---------- */
 
@@ -161,15 +163,15 @@ export function ItemList<T>({ items, onChange, title, meta, thumb, render, creat
           <div class={`list-item${open === i ? ' open' : ''}`} key={i}>
             <div class="list-row">
               <button type="button" class="list-toggle" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i}>
-                <span class="chev" aria-hidden="true">›</span>
+                <span class="chev"><Icon name="chevron" size={16} /></span>
                 {thumb && <span class="list-thumb">{t && <img src={t} alt="" />}</span>}
                 <span class="list-title">{title(item, i)}</span>
                 {meta && <span class="list-meta">{meta(item)}</span>}
               </button>
               <div class="list-actions">
-                <button type="button" class="icon" title="Monter" disabled={i === 0} onClick={() => move(i, -1)}>↑</button>
-                <button type="button" class="icon" title="Descendre" disabled={i === items.length - 1} onClick={() => move(i, 1)}>↓</button>
-                <button type="button" class="icon danger" title="Supprimer" onClick={() => remove(i)}>✕</button>
+                <button type="button" class="icon" title="Monter" disabled={i === 0} onClick={() => move(i, -1)}><Icon name="up" size={15} /></button>
+                <button type="button" class="icon" title="Descendre" disabled={i === items.length - 1} onClick={() => move(i, 1)}><Icon name="down" size={15} /></button>
+                <button type="button" class="icon danger" title="Supprimer" onClick={() => remove(i)}><Icon name="trash" size={15} /></button>
               </div>
             </div>
             {open === i && <div class="list-body">{render(item, update(i), i)}</div>}
@@ -177,7 +179,7 @@ export function ItemList<T>({ items, onChange, title, meta, thumb, render, creat
         );
       })}
       <button type="button" class="btn ghost add" onClick={() => { onChange([...items, create()]); setOpen(items.length); }}>
-        + {addLabel}
+        <Icon name="plus" size={16} />{addLabel}
       </button>
     </div>
   );
@@ -185,28 +187,51 @@ export function ItemList<T>({ items, onChange, title, meta, thumb, render, creat
 
 /* ---------- Photos ---------- */
 
-/** aspect : format d'affichage sur le site (largeur / hauteur), utilisé par l'outil de recadrage. */
-type PhotosProps = { label?: string; photos: Photo[]; onChange: (p: Photo[]) => void; single?: boolean; hint?: string; aspect?: number };
+/**
+ * aspect : format du cadre sur le site (photo unique, ou couverture = 1re photo d'une liste), utilisé par l'aperçu et le recadrage.
+ * columns : pour une liste, réglage de la grille de la page (GRID dans lib/layout.ts) : l'aperçu reproduit exactement le site.
+ */
+type PhotosProps = { label?: string; photos: Photo[]; onChange: (p: Photo[]) => void; single?: boolean; hint?: string; aspect?: number; columns?: number };
 
 /** Glisser-déposer de photos, réordonnables par glisser, avec compression automatique. */
-export function PhotoManager({ label = 'Photos', photos, onChange, single, hint, aspect }: PhotosProps) {
+export function PhotoManager({ label = 'Photos', photos, onChange, single, hint, aspect, columns = GRID.gallery }: PhotosProps) {
   const { addFiles, imgUrl } = useStore();
   const [picking, setPicking] = useState(false);
   const [cropping, setCropping] = useState(false);
   // Recadrage : la photo unique (couverture/fond), ou la 1re d'une liste (couverture de la galerie)
   const cropTarget = photos[0];
-  const cropAspect = aspect ?? (single ? 16 / 9 : 4 / 3);
-  const [busy, setBusy] = useState<[number, number] | null>(null);
+  const cropAspect = aspect ?? (single ? ASPECT.pageBg : ASPECT.card);
+  const [waiting, setWaiting] = useState(0); // photos en cours de compression
   const [over, setOver] = useState(false);
   const [drag, setDrag] = useState<number | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
+  // Toujours la dernière version : les photos arrivent une à une pendant que tu continues à travailler
+  const latest = useRef({ photos, onChange });
+  latest.current = { photos, onChange };
+  const buffer = useRef<Photo[]>([]);
+  const flushTimer = useRef<number>();
+
   const add = async (files: FileList | File[] | null) => {
     if (!files?.length) return;
     const list = Array.from(files).slice(0, single ? 1 : undefined);
-    const added = await addFiles(list, (d, t) => setBusy([d, t]));
-    setBusy(null);
-    onChange(single ? added.slice(0, 1) : [...photos, ...added]);
+    setWaiting((n) => n + list.length);
+    let delivered = 0;
+    await addFiles(list, (p) => {
+      delivered++;
+      setWaiting((n) => Math.max(0, n - 1));
+      if (single) { latest.current.onChange([p]); return; }
+      // regroupe les photos prêtes au même moment, puis les ajoute à la liste la plus récente
+      buffer.current.push(p);
+      clearTimeout(flushTimer.current);
+      flushTimer.current = window.setTimeout(() => {
+        const add = buffer.current.splice(0);
+        const known = new Set(latest.current.photos.map((x) => x.src));
+        latest.current.onChange([...latest.current.photos, ...add.filter((x) => !known.has(x.src))]);
+      }, 30);
+    });
+    // fichiers illisibles (déjà signalés) : on retire leurs emplacements
+    setWaiting((n) => Math.max(0, n - (list.length - delivered)));
   };
 
   const reorder = (to: number) => {
@@ -218,33 +243,62 @@ export function PhotoManager({ label = 'Photos', photos, onChange, single, hint,
     setDrag(to);
   };
 
+  const remove = (i: number) => onChange(photos.filter((_, k) => k !== i));
+
+  const tools = (p: Photo, i: number) => (
+    <>
+      {isPending(p) && <span class="pend" title="Ajoutée sur cet appareil, pas encore publiée">Non publiée</span>}
+      {i === 0 && !single && <span class="badge">Couverture</span>}
+      <span class="tile-tools">
+        {i === 0 && <button type="button" class="tool" title="Recadrer la couverture" onClick={() => setCropping(true)}><Icon name="crop" size={14} /></button>}
+        <button type="button" class="tool danger" title="Retirer" onClick={() => remove(i)}><Icon name="trash" size={14} /></button>
+      </span>
+    </>
+  );
+
   return (
     <div class="field wide photos">
-      <span class="label">{label} {!single && <em>{photos.length}</em>}</span>
-      {photos.length > 0 && (
-        <div class={`photo-grid${single ? ' single' : ''}`}>
-          {photos.map((p, i) => (
-            <figure
-              key={p.src}
-              draggable={!single}
-              class={drag === i ? 'dragging' : ''}
-              // aperçu au format réel du site (photo unique : couverture, fond, carte…)
-              style={single ? { aspectRatio: String(cropAspect), width: `min(100%, calc(300px * ${cropAspect}))` } : undefined}
-              onDragStart={(e) => { setDrag(i); e.dataTransfer!.effectAllowed = 'move'; }}
-              onDragEnter={() => reorder(i)}
-              onDragOver={(e) => e.preventDefault()}
-              onDragEnd={() => setDrag(null)}
-            >
-              <img src={imgUrl(p)} alt="" loading="lazy" style={i === 0 ? cropCss(p.crop) : undefined} />
-              {i === 0 && !single && <span class="badge">Couverture</span>}
-              {i === 0 && (
-                <button type="button" class="crop-btn" title="Recadrer" onClick={() => setCropping(true)}>✂ Recadrer</button>
-              )}
-              <button type="button" class="icon danger" title="Retirer" onClick={() => onChange(photos.filter((_, k) => k !== i))}>✕</button>
+      <div class="photos-head">
+        <span class="label">{label} {!single && <em>{photos.length}</em>}</span>
+        <button type="button" class="btn ghost small" onClick={() => setPicking(true)}><Icon name="library" size={14} />Photos du site</button>
+      </div>
+
+      {single ? (
+        (photos[0] || waiting > 0) && (
+          // aperçu au format réel du cadre sur le site (couverture, fond, carte…)
+          <div class="single-wrap">
+            <figure class={`single-photo${waiting ? ' loading' : ''}`} style={{ aspectRatio: String(cropAspect), width: `min(100%, calc(260px * ${cropAspect}))` }}>
+              {photos[0] && <img src={imgUrl(photos[0])} alt="" style={cropCss(photos[0].crop)} />}
+              {photos[0] && !waiting && tools(photos[0], 0)}
             </figure>
-          ))}
-        </div>
+          </div>
+        )
+      ) : (
+        (photos.length > 0 || waiting > 0) && (
+          // même grille que le site (styles/photo-grid.css), mise à l'échelle de la largeur disponible
+          <div class="pgrid-scale" style={{ '--site-w': SITE_WIDTH, '--gap-n': GRID_GAP } as any}>
+            <div class="pgrid" style={{ '--rh-n': rowHeight(columns) } as any}>
+              {photos.map((p, i) => (
+                <figure
+                  key={p.src}
+                  draggable
+                  class={`ptile${drag === i ? ' dragging' : ''}`}
+                  style={{ '--r': ratio(p).toFixed(4) } as any}
+                  onDragStart={(e) => { setDrag(i); e.dataTransfer!.effectAllowed = 'move'; }}
+                  onDragEnter={() => reorder(i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnd={() => setDrag(null)}
+                >
+                  <img src={imgUrl(p)} alt="" loading="lazy" draggable={false} />
+                  {tools(p, i)}
+                </figure>
+              ))}
+              {Array.from({ length: waiting }, (_, i) => <figure key={`w${i}`} class="ptile loading" style={{ '--r': 1.5 } as any} />)}
+            </div>
+          </div>
+        )
       )}
+
       <div
         class={`drop${over ? ' over' : ''}`}
         onClick={() => input.current?.click()}
@@ -252,12 +306,12 @@ export function PhotoManager({ label = 'Photos', photos, onChange, single, hint,
         onDragLeave={() => setOver(false)}
         onDrop={(e) => { e.preventDefault(); setOver(false); if (drag === null) add(e.dataTransfer?.files ?? null); }}
       >
-        {busy
-          ? <span>Compression… {busy[0]} / {busy[1]}</span>
+        <Icon name="upload" size={18} />
+        {waiting > 0
+          ? <span>Préparation de {waiting} photo{waiting > 1 ? 's' : ''}… tu peux en ajouter d'autres</span>
           : <span>{single ? (photos.length ? 'Remplacer la photo' : 'Ajouter une photo') : 'Glisse tes photos ici'} <u>ou parcourir</u></span>}
         <input ref={input} type="file" accept="image/*" multiple={!single} hidden onChange={(e) => { add(e.currentTarget.files); e.currentTarget.value = ''; }} />
       </div>
-      <button type="button" class="btn ghost small pick-btn" onClick={() => setPicking(true)}>▦ Choisir parmi les photos du site</button>
       {cropping && cropTarget && (
         <Cropper
           photo={cropTarget}
@@ -281,7 +335,7 @@ export function PhotoManager({ label = 'Photos', photos, onChange, single, hint,
         />
       )}
       <span class="hint">
-        {hint ?? (single ? '' : 'Glisse les vignettes pour changer l’ordre. La première sert de couverture. ')}
+        {hint ?? (single ? '' : 'Aperçu identique à la page du site. Glisse les vignettes pour changer l’ordre ; la première sert de couverture. ')}
         Les photos sont compressées automatiquement (WebP, 2000 px max, sans données GPS).
       </span>
     </div>
@@ -289,7 +343,7 @@ export function PhotoManager({ label = 'Photos', photos, onChange, single, hint,
 }
 
 /** Sections (titre + légende + photos) : utilisées par les créations et les projets. */
-export function SectionsEditor({ sections, onChange }: { sections: { title: string; caption: string; photos: Photo[] }[]; onChange: (s: any[]) => void }) {
+export function SectionsEditor({ sections, onChange, columns, coverAspect }: { sections: { title: string; caption: string; photos: Photo[] }[]; onChange: (s: any[]) => void; columns: number; coverAspect?: number }) {
   const { imgUrl } = useStore();
   return (
     <div class="field wide">
@@ -307,7 +361,7 @@ export function SectionsEditor({ sections, onChange }: { sections: { title: stri
           <div class="grid">
             <Field label="Titre" value={s.title} onChange={(v) => up((x) => (x.title = v))} />
             <Field label="Légende (optionnelle)" value={s.caption} onChange={(v) => up((x) => (x.caption = v))} />
-            <PhotoManager photos={s.photos} onChange={(p) => up((x) => (x.photos = p))} />
+            <PhotoManager photos={s.photos} columns={columns} aspect={coverAspect} onChange={(p) => up((x) => (x.photos = p))} />
           </div>
         )}
       />
@@ -340,7 +394,7 @@ function PhotoPicker({ single, exclude, onPick, onClose }: { single?: boolean; e
             <h2>{single ? 'Choisir une photo' : 'Ajouter des photos du site'}</h2>
             <p class="hint">{total} photo{total > 1 ? 's' : ''}{single ? ' · clique sur une photo pour la choisir' : ' · clique pour sélectionner'}</p>
           </div>
-          <button type="button" class="icon" title="Fermer" onClick={onClose}>✕</button>
+          <button type="button" class="icon" title="Fermer" onClick={onClose}><Icon name="close" size={16} /></button>
         </header>
         <div class="picker-filters">
           <input type="search" placeholder="Rechercher une galerie, un projet…" value={q} onInput={(e) => setQ(e.currentTarget.value)} autoFocus />
@@ -414,7 +468,7 @@ function Cropper({ photo, aspect, onSave, onClose }: { photo: Photo; aspect: num
             <h2>Recadrer</h2>
             <p class="hint">Fais glisser l'image pour choisir ce qui est visible, puis règle le zoom. La photo d'origine n'est pas modifiée.</p>
           </div>
-          <button type="button" class="icon" title="Fermer" onClick={onClose}>✕</button>
+          <button type="button" class="icon" title="Fermer" onClick={onClose}><Icon name="close" size={16} /></button>
         </header>
         <div class="crop-stage">
           <div

@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import Backdrop from '../../components/Backdrop.astro';
 import PhotoGrid from '../../components/PhotoGrid.astro';
+import { GRID } from '../../lib/layout';
 import VideoEmbed from '../../components/VideoEmbed.astro';
 import { content, url, photos, cover, rich, cropStyle } from '../../lib/media';
 
@@ -49,7 +50,7 @@ const backdrop = p.cover ? cover([p.cover], p.slug) : cover(p.sections.flatMap((
           <h2 class="display">{s.title}</h2>
           {s.caption && <span class="mono">{s.caption}</span>}
         </div>
-        <PhotoGrid photos={photos(s.photos, `${p.slug}-${i}`, 10)} label={`${p.title}, ${s.title}`} columns={5} />
+        <PhotoGrid photos={photos(s.photos, `${p.slug}-${i}`, 10)} label={`${p.title}, ${s.title}`} columns={GRID.project} />
       </section>
     ))}
 

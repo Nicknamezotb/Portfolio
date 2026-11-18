@@ -1,40 +1,28 @@
 ---
 import type { Photo } from '../lib/media';
-// Rangées justifiées (façon Google Photos) : chaque rangée remplit exactement la largeur,
-// chaque photo garde sa forme, et il n'y a plus de trous comme avec des colonnes.
-// « columns » est conservé pour compatibilité : il règle la hauteur des rangées (plus de colonnes = photos plus petites).
+import { rowHeight, ratio, GRID } from '../lib/layout';
+import '../styles/photo-grid.css';
+// Rangées justifiées : styles communs avec le back-office dans styles/photo-grid.css,
+// réglages (hauteurs, colonnes) dans lib/layout.ts.
+// « columns » règle la hauteur des rangées (plus de colonnes = photos plus petites).
 interface Props { photos: Photo[]; label?: string; columns?: number }
-const { photos, label = '', columns = 3 } = Astro.props;
-const rowHeight = columns >= 5 ? 200 : columns >= 4 ? 240 : columns >= 3 ? 300 : 420;
+const { photos, label = '', columns = GRID.gallery } = Astro.props;
 ---
 {photos.length > 0 && (
-  <div class="grid" style={`--rh:${rowHeight}px`} data-lightbox>
-    {photos.map((p, i) => {
-      const r = p.w && p.h ? p.w / p.h : 1.5;
-      return (
-        <a class="tile" href={p.src} data-index={i} style={`--r:${r.toFixed(4)}`}>
-          <img src={p.thumb} alt={p.alt || `${label}, photo ${i + 1}`} width={p.w} height={p.h} loading="lazy" decoding="async" />
-        </a>
-      );
-    })}
+  <div class="pgrid grid" style={`--rh-n:${rowHeight(columns)}`} data-lightbox>
+    {photos.map((p, i) => (
+      <a class="ptile tile" href={p.src} data-index={i} style={`--r:${ratio(p).toFixed(4)}`}>
+        <img src={p.thumb} alt={p.alt || `${label}, photo ${i + 1}`} width={p.w} height={p.h} loading="lazy" decoding="async" />
+      </a>
+    ))}
   </div>
 )}
 
 <style>
-  .grid { --gap: clamp(6px, .8vw, 12px); display: flex; flex-wrap: wrap; gap: var(--gap); }
-  /* largeur de base = forme × hauteur de rangée ; la croissance proportionnelle à la forme justifie la rangée */
-  .tile {
-    flex: var(--r) 1 calc(var(--r) * var(--rh));
-    aspect-ratio: var(--r);
-    display: block; overflow: hidden; border-radius: 4px; background: var(--raised); cursor: zoom-in;
-  }
-  /* la dernière rangée n'est pas étirée à l'extrême */
-  .grid::after { content: ''; flex: 999 1 0; }
-  .tile img { width: 100%; height: 100%; object-fit: cover; transition: opacity .6s var(--ease-out); }
+  .tile { background: var(--raised); cursor: zoom-in; }
+  .tile img { transition: opacity .6s var(--ease-out); }
   .grid:hover .tile img { opacity: .82; }
   .grid .tile:hover img { opacity: 1; }
-  @media (max-width: 960px) { .grid { --rh: 180px; } }
-  @media (max-width: 480px) { .grid { --rh: 130px; } }
 </style>
 
 <script>

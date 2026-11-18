@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Tile from '../../components/Tile.astro';
+import { ASPECT } from '../../lib/layout';
 import Backdrop from '../../components/Backdrop.astro';
 import { content, url, cover, single } from '../../lib/media';
 const { galleries } = content;
@@ -21,7 +22,7 @@ const bg = single(content.pageBgs?.photo ?? null);
           img={cover(g.photos, g.slug)}
           title={g.title}
           meta={[g.place, g.year, `${g.photos.length} photos`].filter(Boolean).join(' · ')}
-          aspect="4 / 5"
+          aspect={String(ASPECT.card)}
           i={i}
         />
       ))}

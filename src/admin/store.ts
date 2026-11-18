@@ -8,10 +8,12 @@ export type Store = {
   content: Content;
   /** Modifie le contenu : la fonction reçoit une copie modifiable. */
   set: (fn: (draft: Content) => void) => void;
-  /** Compresse des fichiers et renvoie les photos correspondantes (en attente de publication). */
-  addFiles: (files: File[], onProgress?: (done: number, total: number) => void) => Promise<Photo[]>;
+  /** Compresse des fichiers ; chaque photo prête est transmise à `onPhoto` dans l'ordre (en attente de publication). */
+  addFiles: (files: File[], onPhoto: (p: Photo) => void) => Promise<void>;
   /** URL affichable dans l'admin (aperçu local si la photo n'est pas encore publiée). */
   imgUrl: (p: Photo, thumb?: boolean) => string;
+  /** Message court (en bas de l'écran). */
+  toast: (msg: string, kind?: 'ok' | 'err') => void;
 };
 
 export const StoreCtx = createContext<Store>(null as any);
@@ -21,26 +23,50 @@ export const useStore = () => useContext(StoreCtx);
 export const pending = new Map<string, Blob>();
 const previews = new Map<string, string>();
 
-export async function addFiles(files: File[], onProgress?: (d: number, t: number) => void) {
-  const out: Photo[] = [];
-  let done = 0;
-  onProgress?.(0, files.length);
-  for (const f of files) {
-    if (!f.type.startsWith('image/')) continue;
-    try {
-      const { photo, files: blobs } = await processImage(f);
-      for (const [path, blob] of blobs) {
-        pending.set(path, blob);
-        previews.set(path.replace(/^public/, ''), URL.createObjectURL(blob));
-      }
-      out.push(photo);
-    } catch (e) {
-      console.error(e);
-      alert(`Impossible de lire « ${f.name} » (format non supporté ?).`);
+/** La photo n'est pas encore sur GitHub (ajoutée depuis la dernière publication). */
+export const isPending = (p: Photo) => pending.has(`public${p.src}`);
+
+/* Compressions en cours, toutes rubriques confondues : la publication attend qu'elles soient finies. */
+let compressing = 0;
+const listeners = new Set<(n: number) => void>();
+const emit = () => listeners.forEach((f) => f(compressing));
+export const onCompressing = (f: (n: number) => void) => { listeners.add(f); f(compressing); return () => { listeners.delete(f); }; };
+export const whenIdle = () => new Promise<void>((ok) => {
+  if (!compressing) return ok();
+  const off = onCompressing((n) => { if (!n) { off(); setTimeout(ok, 60); } });
+});
+
+export async function addFiles(files: File[], onPhoto: (p: Photo) => void, onError?: (name: string) => void) {
+  const list = files.filter((f) => f.type.startsWith('image/') || /\.(heic|heif|avif|webp|jpe?g|png|gif|tiff?)$/i.test(f.name));
+  compressing += list.length; emit();
+  // 3 compressions en parallèle, mais les photos sont livrées dans l'ordre choisi
+  const results: (Photo | null | undefined)[] = new Array(list.length);
+  let next = 0, out = 0;
+  const flush = () => {
+    while (out < list.length && results[out] !== undefined) {
+      const p = results[out++];
+      if (p) onPhoto(p);
     }
-    onProgress?.(++done, files.length);
-  }
-  return out;
+  };
+  await Promise.all(Array.from({ length: Math.min(3, list.length) }, async () => {
+    while (next < list.length) {
+      const i = next++;
+      try {
+        const { photo, files: blobs } = await processImage(list[i]);
+        for (const [path, blob] of blobs) {
+          pending.set(path, blob);
+          previews.set(path.replace(/^public/, ''), URL.createObjectURL(blob));
+        }
+        results[i] = photo;
+      } catch (e) {
+        console.error(e);
+        results[i] = null;
+        onError?.(list[i].name);
+      }
+      compressing--; emit();
+      flush();
+    }
+  }));
 }
 
 const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/public`;
