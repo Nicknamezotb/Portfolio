@@ -16,7 +16,7 @@ export function getStaticPaths() {
 const { c, next } = Astro.props;
 const backdrop = cover(c.sections.flatMap((s) => s.photos), c.slug);
 ---
-<Base title={c.title} description={`${c.title}, ${c.org} ${c.year} : ${c.work}.`}>
+<Base back="/creations" title={c.title} description={`${c.title}, ${c.org} ${c.year} : ${c.work}.`}>
   <Backdrop photo={backdrop} />
   <div class="wrap">
     <header class="page-head">

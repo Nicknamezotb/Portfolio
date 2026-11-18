@@ -8,9 +8,10 @@ import fontDisplay from '@fontsource/bebas-neue/files/bebas-neue-latin-400-norma
 import fontBody from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import fontSmall from '@fontsource-variable/dm-sans/files/dm-sans-latin-wght-normal.woff2?url';
 
-interface Props { title?: string; description?: string; bodyClass?: string }
+// back : page vers laquelle ramène un balayage vers la droite (pages de détail)
+interface Props { title?: string; description?: string; bodyClass?: string; back?: string }
 const { settings } = content;
-const { title, bodyClass, description = `${settings.name} — ${settings.role}. Photographies, vidéos et créations visuelles.` } = Astro.props;
+const { title, bodyClass, back, description = `${settings.name} — ${settings.role}. Photographies, vidéos et créations visuelles.` } = Astro.props;
 const fullTitle = title ? `${title} — ${settings.name}` : `${settings.name} — ${settings.role}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const { bg, text, accent } = settings.theme;
@@ -30,17 +31,39 @@ const { bg, text, accent } = settings.theme;
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    <script is:inline>
+      // Transitions entre pages : une page de détail arrive par la droite ; en revenant, elle repart à droite.
+      // Après un retour par balayage, la page a déjà été animée au doigt : rien à rejouer.
+      addEventListener('pagereveal', function (e) {
+        var swiped = sessionStorage.getItem('qg-swiped');
+        sessionStorage.removeItem('qg-swiped');
+        var vt = e.viewTransition; if (!vt) return;
+        if (swiped) { vt.skipTransition(); return; }
+        var act = window.navigation && navigation.activation;
+        if (!act || !act.from || !act.entry || !vt.types) return;
+        var detail = function (u) { return /^\/(photo|creations|projets)\/[^/]+/.test(new URL(u).pathname); };
+        var from = detail(act.from.url), to = detail(act.entry.url);
+        if (to && (!from || act.navigationType === 'push')) vt.types.add('push');
+        else if (from && !to) vt.types.add('pop');
+      });
+    </script>
     <style set:html={`html:root{--bg:${bg};--text:${text};--accent:${accent}}`}></style>
   </head>
-  <body class={bodyClass}>
+  <body class={bodyClass} data-back={back ? url(back) : undefined}>
     <Nav />
-    <main>
-      <slot />
-    </main>
-    <Footer />
+    <!-- #page : ce qui bouge avec les gestes de page (le menu fixe reste en place) -->
+    <div id="page">
+      <main>
+        <slot />
+      </main>
+      <Footer />
+    </div>
     <script>
       import { initOpticalAlign } from '../lib/optical';
       initOpticalAlign();
+
+      import { attachPageGestures } from '../lib/pageGestures';
+      attachPageGestures(document.getElementById('page')!);
 
       const io = new IntersectionObserver((entries) => {
         for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }

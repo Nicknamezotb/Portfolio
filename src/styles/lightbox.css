@@ -1,0 +1,43 @@
+/* Visionneuse plein écran (logique : lib/lightbox.ts). */
+.lb {
+  position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0; background: transparent; color: #f2efe9; overflow: hidden;
+  /* tous les gestes sont gérés par la visionneuse : pas de défilement, zoom ou menu natifs qui voleraient le doigt */
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.lb::backdrop { background: transparent; }
+.lb:focus { outline: none; }
+.lb-bg { position: absolute; inset: 0; background: rgb(12 13 16 / .97); }
+.lb-track { position: absolute; inset: 0; will-change: transform; }
+.lb-slide { position: absolute; inset: 0; display: grid; place-items: center; }
+.lb-slide img {
+  max-width: none; object-fit: contain; transform-origin: center;
+  -webkit-user-drag: none; user-select: none; pointer-events: auto;
+}
+.lb.lb-zoomed .lb-slide img { cursor: grab; }
+
+.lb-btn {
+  position: absolute; z-index: 2; background: none; border: 0; cursor: pointer; color: #9a9da5;
+  font: 400 22px/1 var(--font-mono); padding: 16px; transition: color .2s, opacity .25s;
+}
+.lb-btn:hover { color: #6e9fc1; }
+.lb-close { top: 8px; right: 8px; font-size: 18px; }
+.lb-prev { left: 4px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 4px; top: 50%; transform: translateY(-50%); }
+.lb-count {
+  position: absolute; z-index: 2; bottom: 22px; left: 50%; transform: translateX(-50%);
+  font: 12px var(--font-mono); letter-spacing: .1em; color: #7c7f87; transition: opacity .25s; pointer-events: none;
+}
+.lb[open] .lb-btn, .lb[open] .lb-count { animation: lbCtrl .35s ease; }
+@keyframes lbCtrl { from { opacity: 0; } }
+
+/* boutons masqués pendant un glissé, un appui long (immersion), un zoom (flèches) et la fermeture */
+.lb.lb-dragging .lb-btn, .lb.lb-dragging .lb-count,
+.lb.lb-immersive .lb-btn, .lb.lb-immersive .lb-count,
+.lb.lb-closing .lb-btn, .lb.lb-closing .lb-count,
+.lb.lb-zoomed .lb-prev, .lb.lb-zoomed .lb-next,
+.lb.lb-single .lb-prev, .lb.lb-single .lb-next, .lb.lb-single .lb-count { opacity: 0; pointer-events: none; }
+
+/* écrans tactiles : on balaie, pas besoin de flèches */
+@media (hover: none) { .lb-prev, .lb-next { display: none; } }

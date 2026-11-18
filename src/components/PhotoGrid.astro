@@ -2,6 +2,7 @@
 import type { Photo } from '../lib/media';
 import { rowHeight, ratio, GRID } from '../lib/layout';
 import '../styles/photo-grid.css';
+import '../styles/lightbox.css';
 // Rangées justifiées : styles communs avec le back-office dans styles/photo-grid.css,
 // réglages (hauteurs, colonnes) dans lib/layout.ts.
 // « columns » règle la hauteur des rangées (plus de colonnes = photos plus petites).
@@ -27,5 +28,6 @@ const { photos, label = '', columns = GRID.gallery } = Astro.props;
 
 <script>
   import { initLightbox } from '../lib/lightbox';
-  document.querySelectorAll<HTMLElement>('[data-lightbox]').forEach(initLightbox);
+  import { initJustified } from '../lib/justified';
+  document.querySelectorAll<HTMLElement>('[data-lightbox]').forEach((g) => { initJustified(g); initLightbox(g); });
 </script>

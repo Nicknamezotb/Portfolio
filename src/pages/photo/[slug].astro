@@ -16,7 +16,7 @@ const list = photos(g.photos, g.slug, 15);
 const label = [g.place, g.year].filter(Boolean).join(' · ');
 const backdrop = galleryCover(g);
 ---
-<Base title={g.title} description={`${g.title}${g.context ? ` (${g.context})` : ''} — galerie photo, ${g.year}.`}>
+<Base back="/photo" title={g.title} description={`${g.title}${g.context ? ` (${g.context})` : ''} — galerie photo, ${g.year}.`}>
   <Backdrop photo={backdrop} />
   <div class="wrap">
     <header class="page-head">

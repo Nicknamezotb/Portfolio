@@ -14,7 +14,7 @@ const paragraphs = p.intro.split(/\n\s*\n/).filter(Boolean);
 const meta = [p.kicker, p.place, p.date].filter(Boolean).join(' · ');
 const backdrop = p.cover ? cover([p.cover], p.slug) : cover(p.sections.flatMap((s) => s.photos), p.slug);
 ---
-<Base title={p.title} description={paragraphs[0]?.replace(/\*\*/g, '').slice(0, 160)}>
+<Base back="/" title={p.title} description={paragraphs[0]?.replace(/\*\*/g, '').slice(0, 160)}>
   <Backdrop photo={backdrop} />
   <div class="wrap">
     <!-- En-tête : grande photo de couverture, titre incrusté (même esprit que « À la une ») -->

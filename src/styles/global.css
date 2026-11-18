@@ -101,3 +101,27 @@ button { font: inherit; color: inherit; }
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; filter: none; transition: none; }
 }
+
+/* Gestes de page (lib/pageGestures.ts) : pas de rebond natif en plus de notre élastique */
+html, body { overscroll-behavior-y: none; }
+img { -webkit-user-drag: none; }
+
+/* Transitions entre pages (navigateurs récents ; ailleurs, changement de page normal).
+   Une page de détail arrive par la droite, légèrement étirée en hauteur, et se resserre en se posant ;
+   en revenant, elle repart vers la droite. Le menu ne bouge pas. */
+@view-transition { navigation: auto; }
+header.nav { view-transition-name: site-nav; }
+::view-transition-group(root) { animation-duration: .3s; }
+html:active-view-transition-type(push)::view-transition-new(root) {
+  animation: vtIn .42s cubic-bezier(.22, .61, .36, 1) both; transform-origin: top;
+}
+html:active-view-transition-type(push)::view-transition-old(root) { animation: vtBehind .42s cubic-bezier(.22, .61, .36, 1) both; }
+html:active-view-transition-type(pop)::view-transition-old(root) {
+  z-index: 1; animation: vtOut .32s cubic-bezier(.22, .61, .36, 1) both;
+}
+html:active-view-transition-type(pop)::view-transition-new(root) { animation: vtFromBehind .32s cubic-bezier(.22, .61, .36, 1) both; }
+@keyframes vtIn { from { transform: translateX(100%) scaleY(1.035); } }
+@keyframes vtBehind { to { transform: translateX(-18%); opacity: .7; } }
+@keyframes vtOut { to { transform: translateX(100%); } }
+@keyframes vtFromBehind { from { transform: translateX(-18%); opacity: .7; } }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
